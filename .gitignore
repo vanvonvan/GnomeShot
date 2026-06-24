@@ -1,0 +1,8 @@
+# Claude memory files (kept locally, never committed)
+memory/
+.claude-memory/
+
+# Source art for assets (the runtime uses assets/*.png; keep the big originals out)
+*.psd
+*.jpg
+*.jpeg

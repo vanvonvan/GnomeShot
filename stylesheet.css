@@ -1,0 +1,166 @@
+.gnomeshot-overlay {
+    background-color: rgba(0, 0, 0, 0.55);
+}
+
+/* Bottom HUD zone: a band that fades into the bottom edge of the screen. */
+.gnomeshot-dock {
+    background-gradient-direction: vertical;
+    background-gradient-start: rgba(8, 10, 16, 0.0);
+    background-gradient-end: rgba(8, 10, 16, 0.85);
+    padding: 18px 0 22px 0;
+}
+
+.gnomeshot-dock-row {
+    spacing: 48px;
+}
+
+.gnomeshot-stats {
+    spacing: 2px;
+}
+
+.gnomeshot-stat {
+    color: #ffffff;
+    font-size: 18px;
+    font-weight: bold;
+    font-feature-settings: "tnum";
+    text-shadow: 0 1px 3px rgba(0, 0, 0, 0.8);
+}
+
+.gnomeshot-stat-score {
+    color: #00ff8c;
+    font-size: 32px;
+    padding-bottom: 2px;
+}
+
+.gnomeshot-points {
+    color: #ffffff;
+    font-size: 20px;
+    font-weight: bold;
+    text-shadow: 0 1px 3px rgba(0, 0, 0, 0.9);
+}
+
+.gnomeshot-points-bull {
+    color: #ffd23f;
+    font-size: 26px;
+}
+
+/* Game Over: a modern, glassy card. */
+.gnomeshot-gameover {
+    spacing: 10px;
+    padding: 44px 60px;
+    border-radius: 28px;
+    background-gradient-direction: vertical;
+    background-gradient-start: rgba(30, 34, 46, 0.97);
+    background-gradient-end: rgba(13, 15, 21, 0.97);
+    border: 2px solid rgba(0, 255, 140, 0.35);
+}
+
+.gnomeshot-go-title {
+    color: #00ff8c;
+    font-size: 40px;
+    font-weight: bold;
+    padding-bottom: 4px;
+}
+
+.gnomeshot-go-hero {
+    spacing: 0;
+    padding: 8px 0 14px 0;
+}
+
+.gnomeshot-go-score {
+    color: #ffffff;
+    font-size: 70px;
+    font-weight: bold;
+    font-feature-settings: "tnum";
+}
+
+.gnomeshot-go-caption {
+    color: rgba(255, 255, 255, 0.45);
+    font-size: 13px;
+    font-weight: bold;
+}
+
+.gnomeshot-go-caption-best {
+    color: #ffd23f;
+}
+
+.gnomeshot-go-stats {
+    spacing: 16px;
+    padding: 6px 0 4px 0;
+}
+
+.gnomeshot-go-cell {
+    spacing: 3px;
+    padding: 14px 24px;
+    border-radius: 16px;
+    background-color: rgba(255, 255, 255, 0.06);
+    border: 1px solid rgba(255, 255, 255, 0.08);
+}
+
+.gnomeshot-go-cellval {
+    color: #ffffff;
+    font-size: 26px;
+    font-weight: bold;
+    font-feature-settings: "tnum";
+}
+
+.gnomeshot-go-celllabel {
+    color: rgba(255, 255, 255, 0.5);
+    font-size: 11px;
+    font-weight: bold;
+}
+
+.gnomeshot-lb-title {
+    color: rgba(255, 255, 255, 0.5);
+    font-size: 12px;
+    font-weight: bold;
+    padding: 16px 0 8px 0;
+}
+
+.gnomeshot-lb-cols {
+    spacing: 30px;
+}
+
+.gnomeshot-lb-col {
+    spacing: 4px;
+}
+
+.gnomeshot-lb-row {
+    spacing: 14px;
+    padding: 4px 12px;
+    border-radius: 9px;
+    border: 1px solid transparent;
+}
+
+.gnomeshot-lb-rank {
+    color: rgba(255, 255, 255, 0.4);
+    font-size: 15px;
+    font-weight: bold;
+    font-feature-settings: "tnum";
+}
+
+.gnomeshot-lb-score {
+    color: #ffffff;
+    font-size: 15px;
+    font-weight: bold;
+    font-feature-settings: "tnum";
+}
+
+.gnomeshot-lb-empty {
+    color: rgba(255, 255, 255, 0.18);
+}
+
+.gnomeshot-lb-you {
+    background-color: rgba(0, 255, 140, 0.16);
+    border: 1px solid rgba(0, 255, 140, 0.5);
+}
+
+.gnomeshot-lb-val-you {
+    color: #00ff8c;
+}
+
+.gnomeshot-go-hint {
+    color: rgba(255, 255, 255, 0.4);
+    font-size: 13px;
+    padding-top: 14px;
+}
