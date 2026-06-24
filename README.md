@@ -49,15 +49,22 @@ Open and close the game from the **🎯 target icon** in the top panel.
 GnomeShot is a standard GNOME Shell extension (modern ESM style, GNOME Shell **48–50**).
 
 ```sh
-git clone git@github.com:vanvonvan/GnomeShot.git \
+git clone git@github.com:vanvonvan/GnomeShot.git
+cd GnomeShot
+
+# Symlink the extension into your local extensions directory
+ln -s "$PWD/gnomeshot@vanvonvan.github.io" \
   ~/.local/share/gnome-shell/extensions/gnomeshot@vanvonvan.github.io
-gnome-extensions enable gnomeshot@vanvonvan.github.io
 ```
 
-Then restart GNOME Shell so it picks up the new extension:
+Then restart GNOME Shell so it picks up the new extension, and enable it:
 
 - **Xorg:** `Alt`+`F2`, type `r`, `Enter`.
 - **Wayland:** log out and back in (the Shell can't hot-reload under Wayland).
+
+```sh
+gnome-extensions enable gnomeshot@vanvonvan.github.io
+```
 
 > Tip for hacking on it locally: test in an isolated nested session with
 > `dbus-run-session -- gnome-shell --nested --wayland` (or `--devkit`) so you don't disturb your real desktop.
@@ -66,7 +73,7 @@ Then restart GNOME Shell so it picks up the new extension:
 
 - **Built by [Claude](https://claude.com/claude-code)** (Anthropic's Claude Code, Opus model) — the entire extension, from gameplay and game feel to the artwork, branding, and this README, was designed and implemented by Claude in collaboration with the repo owner.
 - **Sound effects** — sourced from [Pixabay](https://pixabay.com/sound-effects/) (royalty-free, no attribution required): gunshot, 1911 reload, dry-fire, and the "awesome" voice line.
-- **Bullet artwork** — bundled under `assets/`.
+- **Bullet artwork** — bundled with the extension under `gnomeshot@vanvonvan.github.io/assets/`.
 - Built with **GJS** on **GNOME Shell**, drawn with **St** + **Cairo**.
 
 ## License

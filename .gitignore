@@ -2,7 +2,7 @@
 memory/
 .claude-memory/
 
-# Source art for assets (the runtime uses assets/*.png; keep the big originals out)
+# Source art for assets (keep the big originals out of the repo)
 *.psd
 *.jpg
 *.jpeg
