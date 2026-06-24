@@ -44,6 +44,11 @@
     font-size: 26px;
 }
 
+.gnomeshot-points-time {
+    color: #4fd1ff;
+    font-size: 24px;
+}
+
 /* Game Over: a modern, glassy card. */
 .gnomeshot-gameover {
     spacing: 10px;

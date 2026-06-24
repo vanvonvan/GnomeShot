@@ -50,6 +50,7 @@ const FALL_SPIN = 9;           // max degrees/frame of tumble
 // A shot counts as a bullseye (and triggers the voice) at the gold center.
 const BULLSEYE_RING = 9;       // ring score (1..10) at/above which it's a bull
 const BULLSEYE_VOICE_DELAY_MS = 320; // let the gunshot land before the "Awesome!"
+const BULLSEYE_TIME_BONUS = 10; // seconds added to the clock on a dead-centre hit
 
 // Ammo: a fixed magazine, right-click to reload, locked out while reloading.
 const MAG_SIZE = 12;           // rounds per magazine
@@ -598,8 +599,10 @@ class Game {
     }
 
     _progress() {
-        // 0 at start of round, 1 at the end — drives difficulty.
-        return 1 - this._timeLeft / GAME_DURATION;
+        // 0 at start of round, 1 at the end — drives difficulty. Clamp so a
+        // time bonus pushing _timeLeft past GAME_DURATION can't drive it
+        // negative (which would extrapolate the difficulty lerps backwards).
+        return Math.max(0, 1 - this._timeLeft / GAME_DURATION);
     }
 
     _scheduleSpawn() {
@@ -959,6 +962,10 @@ class Game {
                         return GLib.SOURCE_REMOVE;
                     });
                 this._timers.add(id);
+
+                // Reward the perfect shot with extra time on the clock.
+                this._timeLeft += BULLSEYE_TIME_BONUS;
+                this._popTime(bcx, bcy, BULLSEYE_TIME_BONUS);
             }
 
             this._removeTarget(best, true);
@@ -983,6 +990,23 @@ class Game {
             translation_y: -44,
             opacity: 0,
             duration: 650,
+            mode: Clutter.AnimationMode.EASE_OUT_QUAD,
+            onComplete: () => label.destroy(),
+        });
+    }
+
+    // Floating "+10s" time bonus, rising above the "+N" points popup.
+    _popTime(x, y, secs) {
+        const label = new St.Label({
+            style_class: 'gnomeshot-points gnomeshot-points-time',
+            text: `+${secs}s`,
+        });
+        this._overlay.add_child(label);
+        label.set_position(Math.round(x - 20), Math.round(y - 44));
+        label.ease({
+            translation_y: -64,
+            opacity: 0,
+            duration: 850,
             mode: Clutter.AnimationMode.EASE_OUT_QUAD,
             onComplete: () => label.destroy(),
         });
@@ -1051,6 +1075,23 @@ class Game {
         const acc = this._shots > 0
             ? Math.round((this._hits / this._shots) * 100) : 0;
         const isBest = result.rank === 0;
+
+        // Lift the running hit-grouping target out of the dock so it survives
+        // the dock being hidden — we'll fly it over to sit beside the card.
+        // Capture where it currently sits (overlay-local) before reparenting.
+        let goStartX = 0, goStartY = 0;
+        if (this._hitTarget) {
+            const [ax, ay] = this._hitTarget.get_transformed_position();
+            const [ox, oy] = this._overlay.get_transformed_position();
+            goStartX = ax - ox;
+            goStartY = ay - oy;
+            const parent = this._hitTarget.get_parent();
+            if (parent)
+                parent.remove_child(this._hitTarget);
+            this._overlay.add_child(this._hitTarget);
+            this._hitTarget.set_pivot_point(0.5, 0.5);
+            this._hitTarget.set_position(Math.round(goStartX), Math.round(goStartY));
+        }
 
         // Game Over is a summary screen; the in-play HUD zone just clutters it.
         if (this._dock)
@@ -1139,12 +1180,46 @@ class Game {
         panel.add_child(centered(new St.Label({
             style_class: 'gnomeshot-go-hint', text: 'Click or press Esc to close'})));
 
+        const panelW = 520;
         this._overlay.add_child(panel);
-        panel.set_width(520);
-        // Centre on the overlay regardless of the panel's measured height.
-        for (const axis of [Clutter.AlignAxis.X_AXIS, Clutter.AlignAxis.Y_AXIS]) {
-            panel.add_constraint(new Clutter.AlignConstraint({
-                source: this._overlay, align_axis: axis, factor: 0.5}));
+        panel.set_width(panelW);
+
+        // Lay the target and the card out side by side — target on the left,
+        // card on the right — and centre the pair on the overlay.
+        const W = this._overlay.width;
+        const H = this._overlay.height;
+        const tScale = 2.0;                 // grow the little 124px HUD target
+        const tSize = 124 * tScale;
+        const gap = 64;
+        const groupW = tSize + gap + panelW;
+        const groupLeft = Math.max(20, (W - groupW) / 2);
+
+        // Pin the card vertically centred; X positioned via an equivalent
+        // align factor so it lands at the right of the pair.
+        const panelLeft = groupLeft + tSize + gap;
+        const fx = (W - panelW) > 0 ? panelLeft / (W - panelW) : 0.5;
+        panel.add_constraint(new Clutter.AlignConstraint({
+            source: this._overlay, align_axis: Clutter.AlignAxis.X_AXIS, factor: fx}));
+        panel.add_constraint(new Clutter.AlignConstraint({
+            source: this._overlay, align_axis: Clutter.AlignAxis.Y_AXIS, factor: 0.5}));
+        panel.opacity = 0;
+        panel.ease({opacity: 255, duration: 450,
+            mode: Clutter.AnimationMode.EASE_OUT_QUAD});
+
+        // Fly the hit-grouping target from the dock to the left of the card,
+        // growing as it goes. Pivot is centred, so the visual centre stays at
+        // (x + 62, y + 62) regardless of scale.
+        if (this._hitTarget) {
+            const targetCX = groupLeft + tSize / 2;
+            const targetCY = H / 2;
+            this._hitTarget.ease({
+                x: Math.round(targetCX - 62),
+                y: Math.round(targetCY - 62),
+                scale_x: tScale,
+                scale_y: tScale,
+                duration: 700,
+                mode: Clutter.AnimationMode.EASE_OUT_BACK,
+            });
         }
         // The existing click / key handlers now close the game (phase === 'over').
     }
