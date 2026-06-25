@@ -23,6 +23,11 @@
 
 A 60-second round drops a full-screen overlay over your desktop. Archery targets pop in and immediately start receding into the distance — shoot them before they shrink away. Where your shot lands on the rings decides the points (bullseye = 10, outer edge = 1), multiplied by your current combo. Miss, or let one escape, and the combo resets.
 
+### Rules
+
+- **Scoring** — points = ring value (gold bullseye = 10 → outer ring = 1) × combo multiplier. The multiplier climbs as you chain hits and resets on a miss or an escaped target.
+- **The clock** — the round starts at **60 seconds**. A dead-centre **bullseye adds +10s**, and **letting a target escape (not shooting it before it recedes) costs you −5s**. The round ends the moment the clock hits zero.
+
 ## Features
 
 - 🎯 **Placement scoring** — gold bullseye to outer ring, with a rising **combo multiplier**.

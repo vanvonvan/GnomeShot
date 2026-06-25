@@ -51,6 +51,7 @@ const FALL_SPIN = 9;           // max degrees/frame of tumble
 const BULLSEYE_RING = 9;       // ring score (1..10) at/above which it's a bull
 const BULLSEYE_VOICE_DELAY_MS = 320; // let the gunshot land before the "Awesome!"
 const BULLSEYE_TIME_BONUS = 10; // seconds added to the clock on a dead-centre hit
+const MISS_TIME_PENALTY = 5;    // seconds dropped from the clock if a target escapes
 
 // Ammo: a fixed magazine, right-click to reload, locked out while reloading.
 const MAG_SIZE = 12;           // rounds per magazine
@@ -784,9 +785,17 @@ class Game {
         if (!target.alive)
             return;
         target.alive = false;
-        // A target you let recede away breaks the combo.
+        // A target you let recede away breaks the combo and costs you time.
         this._combo = 0;
+        const [cx, cy] = this._liveCenter(target);
+        this._timeLeft -= MISS_TIME_PENALTY;
+        this._popTime(cx, cy, -MISS_TIME_PENALTY);
         this._removeTarget(target, false);
+        // The penalty can run the clock out between ticks; end the round now.
+        if (this._timeLeft <= 0) {
+            this._gameOver();
+            return;
+        }
         this._updateHud();
     }
 
@@ -1000,11 +1009,15 @@ class Game {
         });
     }
 
-    // Floating "+10s" time bonus, rising above the "+N" points popup.
+    // Floating time-change popup: "+10s" bonus (blue) on a bullseye, or a
+    // "-5s" penalty (red) when a target escapes. Sign comes from `secs`.
     _popTime(x, y, secs) {
+        const penalty = secs < 0;
         const label = new St.Label({
-            style_class: 'gnomeshot-points gnomeshot-points-time',
-            text: `+${secs}s`,
+            style_class: penalty
+                ? 'gnomeshot-points gnomeshot-points-penalty'
+                : 'gnomeshot-points gnomeshot-points-time',
+            text: `${secs > 0 ? '+' : '−'}${Math.abs(secs)}s`,
         });
         this._overlay.add_child(label);
         label.set_position(Math.round(x - 20), Math.round(y - 44));
