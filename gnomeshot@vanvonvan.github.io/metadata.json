@@ -2,7 +2,7 @@
   "uuid": "gnomeshot@vanvonvan.github.io",
   "name": "GnomeShot",
   "description": "A fullscreen aim-trainer shooting game for GNOME Shell. Click the panel target icon to play: shoot the targets before they slip away, build combos, dodge-track the trickier ones, and beat your high score.",
-  "shell-version": ["48", "49", "50"],
+  "shell-version": ["46", "47", "48", "49", "50"],
   "version": 1,
   "gettext-domain": "gnomeshot"
 }

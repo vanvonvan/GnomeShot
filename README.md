@@ -8,7 +8,7 @@
 </p>
 
 <p align="center">
-  <img alt="GNOME Shell 48–50" src="https://img.shields.io/badge/GNOME%20Shell-48%20%7C%2049%20%7C%2050-4a86cf">
+  <img alt="GNOME Shell 46–50" src="https://img.shields.io/badge/GNOME%20Shell-46%20%7C%2047%20%7C%2048%20%7C%2049%20%7C%2050-4a86cf">
   <img alt="GJS ESM" src="https://img.shields.io/badge/GJS-ESM-2ecc71">
 </p>
 
@@ -46,7 +46,9 @@ Open and close the game from the **🎯 target icon** in the top panel.
 
 ## Install
 
-GnomeShot is a standard GNOME Shell extension (modern ESM style, GNOME Shell **48–50**).
+GnomeShot is a standard GNOME Shell extension (modern ESM style, GNOME Shell **46–50**).
+
+> On GNOME Shell **46–48** the system cursor stays visible behind the crosshair — the API used to hide it (`inhibit_cursor_visibility`) only landed in Shell 49. Everything else plays identically.
 
 ```sh
 git clone git@github.com:vanvonvan/GnomeShot.git

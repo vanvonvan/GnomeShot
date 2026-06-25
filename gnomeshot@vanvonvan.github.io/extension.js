@@ -510,12 +510,17 @@ class Game {
         // Hide the system cursor — the crosshair is the pointer now. Pair the
         // cursor-visibility inhibit with a seat unfocus inhibit, exactly as
         // GNOME Shell's own magnifier does, so it stays hidden during input.
+        // The inhibit_cursor_visibility() API only exists on Shell 49+; on
+        // 46–48 it's absent, so we feature-detect and just leave the system
+        // cursor showing behind the crosshair there (a harmless cosmetic gap).
         try {
             this._cursorTracker = global.backend.get_cursor_tracker();
             this._seat = Clutter.get_default_backend().get_default_seat();
-            this._seat.inhibit_unfocus();
-            this._cursorTracker.inhibit_cursor_visibility();
-            this._cursorHidden = true;
+            if (this._cursorTracker.inhibit_cursor_visibility) {
+                this._seat.inhibit_unfocus();
+                this._cursorTracker.inhibit_cursor_visibility();
+                this._cursorHidden = true;
+            }
         } catch (e) {
             logError(e, '[GnomeShot] could not hide cursor');
         }
@@ -1292,13 +1297,22 @@ class GnomeShotButton extends PanelMenu.Button {
         this._onClick = onClick;
         this.add_child(new PanelTargetIcon());
 
-        // GNOME 50 panel buttons receive clicks via a Clutter gesture, not the
-        // button-press-event signal or vfunc_event. Recognize on release (a
-        // full click) — recognizing on press would grab input while the mouse
-        // button is still down and freeze the in-game crosshair.
-        const click = new Clutter.ClickGesture();
-        click.connect('recognize', () => this._onClick());
-        this.add_action(click);
+        // Panel buttons receive clicks via a Clutter action/gesture, not the
+        // button-press-event signal or vfunc_event. The gesture framework
+        // changed between Shell versions: 48+ exposes Clutter.ClickGesture,
+        // while 46/47 only have the older Clutter.ClickAction. Feature-detect
+        // so one codebase covers both. Either way, fire on RELEASE (a full
+        // click) — grabbing on press would freeze the in-game crosshair while
+        // the mouse button is still down.
+        if (Clutter.ClickGesture) {
+            const click = new Clutter.ClickGesture();
+            click.connect('recognize', () => this._onClick());
+            this.add_action(click);
+        } else {
+            const click = new Clutter.ClickAction();
+            click.connect('clicked', () => this._onClick());
+            this.add_action(click);
+        }
     }
 });
 
