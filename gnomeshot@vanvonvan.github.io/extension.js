@@ -4,6 +4,7 @@ import Clutter from 'gi://Clutter';
 import GLib from 'gi://GLib';
 import Gio from 'gi://Gio';
 import Shell from 'gi://Shell';
+import Cairo from 'gi://cairo';
 
 import {Extension} from 'resource:///org/gnome/shell/extensions/extension.js';
 import * as Main from 'resource:///org/gnome/shell/ui/main.js';
@@ -23,6 +24,17 @@ const RADIUS_MAX = 100;
 const TARGET_POP_MS = 60;      // grow-in (snappy — keep the delay imperceptible)
 const TARGET_RECEDE_MS = 1100; // shrink "into the distance"
 const TARGET_VANISH_SCALE = 0.5; // gone once it has shrunk to half size
+
+// A target you let recede away stays fully opaque, then puffs into smoke
+// instead of fading out. The puff is a handful of independent soft-edged
+// (radial-gradient) particles that billow apart, drift upward, swell, and
+// fade at staggered rates — so it reads as a dissipating cloud, not discs.
+const SMOKE_PARTICLES = 9;      // particles per puff
+const SMOKE_MS = 780;           // base particle lifetime (each varies ±)
+const SMOKE_RISE = 50;          // upward drift bias (px)
+const SMOKE_SPREAD = 0.85;      // outward drift, as a fraction of puff size
+const SMOKE_GROW = 2.3;         // how much each particle swells over its life
+const SMOKE_SIZE_FACTOR = 1.8;  // puff size relative to the target's live radius
 
 // Some targets "dodge": sharp lateral jukes during their life (not all of them).
 const DODGE_CHANCE = 0.4;   // fraction of targets that dodge
@@ -307,6 +319,36 @@ class HitFlame extends St.DrawingArea {
         cr.arc(cx, cy, R * 0.16, 0, 2 * Math.PI);
         cr.fill();
 
+        cr.$dispose();
+    }
+});
+
+// ---- One soft-edged smoke particle (a target leaves a puff of these) ------
+const SmokeParticle = GObject.registerClass(
+class SmokeParticle extends St.DrawingArea {
+    _init(size, grey) {
+        super._init({width: size, height: size, reactive: false});
+        this._grey = grey; // 0..1 base shade for this particle
+        this.connect('repaint', this._draw.bind(this));
+    }
+
+    _draw() {
+        const cr = this.get_context();
+        const [w, h] = this.get_surface_size();
+        const cx = w / 2;
+        const cy = h / 2;
+        const R = Math.min(w, h) / 2;
+        const g = this._grey;
+        // A radial gradient: denser near the centre, fading completely to
+        // nothing at the rim, so the particle has no hard edge — the key to
+        // reading as smoke rather than a flat disc.
+        const grad = new Cairo.RadialGradient(cx, cy, 0, cx, cy, R);
+        grad.addColorStopRGBA(0.0, g, g, g, 0.50);
+        grad.addColorStopRGBA(0.5, g, g, g, 0.26);
+        grad.addColorStopRGBA(1.0, g, g, g, 0.0);
+        cr.setSource(grad);
+        cr.arc(cx, cy, R, 0, 2 * Math.PI);
+        cr.fill();
         cr.$dispose();
     }
 });
@@ -667,11 +709,12 @@ class Game {
                 if (!target.alive)
                     return;
                 // Phase 2: recede into the distance immediately, then vanish.
-                // LINEAR (not ease-in) so it starts moving back with no creep.
+                // Stays fully opaque the whole way (it puffs into smoke at the
+                // end rather than fading). LINEAR so it starts moving back with
+                // no creep.
                 actor.ease({
                     scale_x: TARGET_VANISH_SCALE,
                     scale_y: TARGET_VANISH_SCALE,
-                    opacity: 120,
                     duration: TARGET_RECEDE_MS,
                     mode: Clutter.AnimationMode.LINEAR,
                     onComplete: () => this._expire(target),
@@ -815,15 +858,15 @@ class Game {
             // A hit target tumbles off the bottom of the screen under gravity.
             this._fallAndDestroy(target);
         } else {
-            // A target you let recede away just shrinks out.
-            a.ease({
-                scale_x: 0,
-                scale_y: 0,
-                opacity: 0,
-                duration: 110,
-                mode: Clutter.AnimationMode.EASE_OUT_QUAD,
-                onComplete: () => a.destroy(),
-            });
+            // A target you let recede away puffs into smoke and is gone. The
+            // cloud sits at the target's live centre, sized to its live radius
+            // (smaller for ones that have receded farther). Pivot is centred,
+            // so the visual centre is x+r regardless of the recede scale.
+            const cx = a.x + target.r;
+            const cy = a.y + target.r;
+            const radius = target.r * (a.scale_x || 1);
+            this._puff(cx, cy, Math.max(80, radius * SMOKE_SIZE_FACTOR));
+            a.destroy();
         }
     }
 
@@ -1046,6 +1089,49 @@ class Game {
             mode: Clutter.AnimationMode.EASE_OUT_QUAD,
             onComplete: () => f.destroy(),
         });
+    }
+
+    // A short-lived smoke cloud at (x, y) — the puff a target leaves behind
+    // when it recedes away. Spawns several soft particles that start clustered,
+    // then each independently drifts outward + up, swells, and fades on its own
+    // timing, so the cloud billows and dissipates instead of scaling rigidly.
+    _puff(x, y, size) {
+        for (let i = 0; i < SMOKE_PARTICLES; i++) {
+            const grey = 0.50 + Math.random() * 0.28;
+            const psize = size * (0.45 + Math.random() * 0.45);
+            const p = new SmokeParticle(psize, grey);
+            this._overlay.add_child(p);
+            p.set_pivot_point(0.5, 0.5);
+
+            // Start tightly clustered around the impact point.
+            const jitter = size * 0.16;
+            const sx = x + (Math.random() - 0.5) * jitter;
+            const sy = y + (Math.random() - 0.5) * jitter;
+            p.set_position(Math.round(sx - psize / 2),
+                           Math.round(sy - psize / 2));
+            const startScale = 0.45 + Math.random() * 0.35;
+            p.set_scale(startScale, startScale);
+            p.opacity = Math.round(170 + Math.random() * 70);
+
+            // Drift outward in a random direction, biased upward (smoke rises).
+            const ang = Math.random() * 2 * Math.PI;
+            const dist = size * SMOKE_SPREAD * (0.35 + Math.random() * 0.65);
+            const dx = Math.cos(ang) * dist;
+            const dy = Math.sin(ang) * dist -
+                SMOKE_RISE * (0.6 + Math.random() * 0.8);
+            const dur = Math.round(SMOKE_MS * (0.7 + Math.random() * 0.6));
+
+            p.ease({
+                translation_x: dx,
+                translation_y: dy,
+                scale_x: startScale * SMOKE_GROW,
+                scale_y: startScale * SMOKE_GROW,
+                opacity: 0,
+                duration: dur,
+                mode: Clutter.AnimationMode.EASE_OUT_QUAD,
+                onComplete: () => p.destroy(),
+            });
+        }
     }
 
     _moveCrosshair(x, y) {
